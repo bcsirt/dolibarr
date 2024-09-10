@@ -6,6 +6,7 @@
  * Copyright (C) 2013 		Philippe Grand			<philippe.grand@atoo-net.com>
  * Copyright (C) 2015-2016	Alexandre Spangaro		<aspangaro@open-dsi.fr>
  * Copyright (C) 2018-2024	Frédéric France         <frederic.france@free.fr>
+ * Copyright (C) 2022-2024	Laurent LOUIS-THERESE   <laurent@bcsirt.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -445,7 +446,7 @@ if ($action == 'new') {
 	$sql = "SELECT ba.rowid as bid, ba.label,";
 	$sql .= " b.rowid as transactionid, b.label as transactionlabel, b.datec as datec, b.dateo as date, ";
 	$sql .= " b.amount, b.emetteur, b.num_chq, b.banque,";
-	$sql .= " p.rowid as paymentid, p.ref as paymentref";
+	$sql .= " p.rowid as paymentid, s.code_compta, p.ref as paymentref";
 	$sql .= " FROM ".MAIN_DB_PREFIX."bank as b";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."paiement as p ON p.fk_bank = b.rowid";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."bank_account as ba ON (b.fk_account = ba.rowid)";
@@ -471,6 +472,7 @@ if ($action == 'new') {
 			$accounts[$obj->bid] = $obj->label;
 			$lines[$obj->bid][$i]["date"] = $db->jdate($obj->datec);
 			$lines[$obj->bid][$i]["amount"] = $obj->amount;
+			$lines[$obj->bid][$i]["code_compta"] = $obj->code_compta;
 			$lines[$obj->bid][$i]["emetteur"] = $obj->emetteur;
 			$lines[$obj->bid][$i]["numero"] = $obj->num_chq;
 			$lines[$obj->bid][$i]["banque"] = $obj->banque;
@@ -530,6 +532,7 @@ if ($action == 'new') {
 		}
 		print '</td>'."\n";
 		print '<td>'.$langs->trans("ChequeNumber")."</td>\n";
+		print '<td>'.$langs->trans("Code compta")."</td>\n";
 		print '<td>'.$langs->trans("CheckTransmitter")."</td>\n";
 		print '<td>'.$langs->trans("Bank")."</td>\n";
 		print '<td class="right">'.$langs->trans("Amount")."</td>\n";
@@ -547,6 +550,7 @@ if ($action == 'new') {
 				print '<tr class="oddeven">';
 				print '<td>'.dol_print_date($value["date"], 'day').'</td>';
 				print '<td>'.$value["numero"]."</td>\n";
+				print '<td>'.$value["code_compta"]."</td>\n";
 				print '<td>'.$value["emetteur"]."</td>\n";
 				print '<td>'.$value["banque"]."</td>\n";
 				print '<td class="right"><span class="amount">'.price($value["amount"], 0, $langs, 1, -1, -1, $conf->currency).'</span></td>';
@@ -684,7 +688,7 @@ if ($action == 'new') {
 	// List of bank checks
 	$sql = "SELECT b.rowid, b.rowid as ref, b.label, b.amount, b.num_chq, b.emetteur,";
 	$sql .= " b.dateo as date, b.datec as datec, b.banque,";
-	$sql .= " p.rowid as pid, p.ref as pref, ba.rowid as bid, p.statut";
+	$sql .= " p.rowid as pid, p.ref as pref, ba.rowid as bid, p.statut, s.code_compta";
 	$sql .= " FROM ".MAIN_DB_PREFIX."bank_account as ba";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."bank as b ON (b.fk_account = ba.rowid)";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."paiement as p ON p.fk_bank = b.rowid";
@@ -706,6 +710,7 @@ if ($action == 'new') {
 		print_liste_field_titre("Cheques", '', '', '', '', 'width="30"');
 		print_liste_field_titre("DateChequeReceived", $_SERVER["PHP_SELF"], "b.dateo,b.rowid", "", $param, 'align="center"', $sortfield, $sortorder);
 		print_liste_field_titre("Numero", $_SERVER["PHP_SELF"], "b.num_chq", "", $param, 'align="center"', $sortfield, $sortorder);
+		print_liste_field_titre("Code compta", $_SERVER["PHP_SELF"], "s.code_compta", "", $param, "", $sortfield, $sortorder);
 		print_liste_field_titre("CheckTransmitter", $_SERVER["PHP_SELF"], "b.emetteur", "", $param, "", $sortfield, $sortorder);
 		print_liste_field_titre("Bank", $_SERVER["PHP_SELF"], "b.banque", "", $param, "", $sortfield, $sortorder);
 		print_liste_field_titre("Amount", $_SERVER["PHP_SELF"], "b.amount", "", $param, 'class="right"', $sortfield, $sortorder);
@@ -727,6 +732,7 @@ if ($action == 'new') {
 				print '<td class="center">'.$i.'</td>';
 				print '<td class="center">'.dol_print_date($db->jdate($objp->date), 'day').'</td>'; // Operation date
 				print '<td class="center">'.($objp->num_chq ? $objp->num_chq : '&nbsp;').'</td>';
+				print '<td>'.$objp->code_compta."</td>\n";
 				print '<td>'.dol_trunc($objp->emetteur, 24).'</td>';
 				print '<td>'.dol_trunc($objp->banque, 24).'</td>';
 				print '<td class="right"><span class="amount">'.price($objp->amount).'</span></td>';
