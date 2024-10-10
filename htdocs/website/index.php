@@ -342,7 +342,7 @@ if (empty($sortfield)) {
 	}
 }
 
-$searchkey = GETPOST('searchstring', 'restricthtml');
+$searchkey = GETPOST('searchstring', 'restricthtmlallowunvalid');	// or 'none', must be same then $searchstring
 
 if ($action == 'replacesite' || $mode == 'replacesite') {	// Test on permission not required
 	$containertype = GETPOST('optioncontainertype', 'aZ09') != '-1' ? GETPOST('optioncontainertype', 'aZ09') : '';
@@ -583,7 +583,7 @@ if ($massaction == 'delcategory' && GETPOST('confirmmassaction', 'alpha') && $us
 
 // Replacement of string into pages
 if ($massaction == 'replace' && GETPOST('confirmmassaction', 'alpha') && $usercanedit) {
-	$replacestring = GETPOST('replacestring', 'none');
+	$replacestring = GETPOST('replacestring', 'restricthtmlallowunvalid');	// or 'none', must be same then $searchstring
 
 	$dolibarrdataroot = preg_replace('/([\\/]+)$/i', '', DOL_DATA_ROOT);
 	$allowimportsite = true;
@@ -764,7 +764,7 @@ if ($action == 'addcontainer' && $usercanedit) {
 
 	if (GETPOSTISSET('fetchexternalurl')) {	// Fetch from external url
 		$urltograb = GETPOST('externalurl', 'alpha');
-		$grabimages = GETPOST('grabimages', 'alpha');
+		$grabimages = GETPOSTINT('grabimages') ? 1 : 0;
 		$grabimagesinto = GETPOST('grabimagesinto', 'alpha');
 
 		include_once DOL_DOCUMENT_ROOT.'/core/lib/geturl.lib.php';
@@ -782,6 +782,7 @@ if ($action == 'addcontainer' && $usercanedit) {
 			$action = 'createcontainer';
 		}
 
+		$pageurl = '';
 		if (!$error) {
 			// Clean url to grab, so url can be
 			// http://www.example.com/ or http://www.example.com/dir1/ or http://www.example.com/dir1/aaa
@@ -1151,7 +1152,7 @@ if ($action == 'addcontainer' && $usercanedit) {
 		$objectpage->otherlang = GETPOST('WEBSITE_OTHERLANG', 'aZ09comma');
 		$objectpage->image = GETPOST('WEBSITE_IMAGE', 'alpha');
 		$objectpage->keywords = str_replace(array('<', '>'), '', GETPOST('WEBSITE_KEYWORDS', 'alphanohtml'));
-		$objectpage->allowed_in_frames = GETPOST('WEBSITE_ALLOWED_IN_FRAMES', 'aZ09');
+		$objectpage->allowed_in_frames = GETPOST('WEBSITE_ALLOWED_IN_FRAMES', 'aZ09') ? 1 : 0;
 		$objectpage->htmlheader = GETPOST('htmlheader', 'none');	// Must accept tags like '<script>' and '<link>'
 		$objectpage->author_alias = GETPOST('WEBSITE_AUTHORALIAS', 'alphanohtml');
 		$objectpage->object_type = GETPOST('WEBSITE_OBJECTCLASS');
@@ -2037,7 +2038,7 @@ if ($action == 'updatemeta' && $usercanedit) {
 		$objectpage->description = str_replace(array('<', '>'), '', GETPOST('WEBSITE_DESCRIPTION', 'alphanohtml'));
 		$objectpage->image = GETPOST('WEBSITE_IMAGE', 'alpha');
 		$objectpage->keywords = str_replace(array('<', '>'), '', GETPOST('WEBSITE_KEYWORDS', 'alphanohtml'));
-		$objectpage->allowed_in_frames = GETPOST('WEBSITE_ALLOWED_IN_FRAMES', 'aZ09');
+		$objectpage->allowed_in_frames = GETPOST('WEBSITE_ALLOWED_IN_FRAMES', 'aZ09') ? 1 : 0;
 		$objectpage->htmlheader = trim(GETPOST('htmlheader', 'restricthtmlallowlinkscript'));		// Must accept tags like '<script>' and '<link>'
 		$objectpage->fk_page = (GETPOSTINT('pageidfortranslation') > 0 ? GETPOSTINT('pageidfortranslation') : 0);
 		$objectpage->author_alias = trim(GETPOST('WEBSITE_AUTHORALIAS', 'alphanohtml'));
@@ -3113,7 +3114,7 @@ if (!GETPOST('hide_websitemenu')) {
 			print '<a href="'.$_SERVER["PHP_SELF"].'?action=confirmgeneratesitemaps&token='.newToken().'&website='.urlencode($website->ref).'" class="button bordertransp"'.$disabled.' title="'.dol_escape_htmltag($langs->trans("GenerateSitemaps")).'"><span class="fa fa-sitemap"></span></a>';
 
 			// Find / replace tool
-			print '<a href="'.$_SERVER["PHP_SELF"].'?action=replacesite&website='.urlencode($website->ref).'" class="button bordertransp"'.$disabled.' title="'.dol_escape_htmltag($langs->trans("ReplaceWebsiteContent")).'"><span class="fa fa-search"></span></a>';
+			print '<a href="'.$_SERVER["PHP_SELF"].'?action=replacesite&token='.newToken().'&website='.urlencode($website->ref).'" class="button bordertransp"'.$disabled.' title="'.dol_escape_htmltag($langs->trans("ReplaceWebsiteContent")).'"><span class="fa fa-search"></span></a>';
 		}
 
 		print '</span>';
@@ -3444,9 +3445,9 @@ if (!GETPOST('hide_websitemenu')) {
 				print '<div class="inline-block marginrightonly">';	// Button includes dynamic content
 				print $langs->trans("ShowSubcontainers");
 				if (!getDolGlobalString('WEBSITE_SUBCONTAINERSINLINE')) {
-					print '<a class="nobordertransp nohoverborder marginleftonlyshort valignmiddle"'.$disabled.' href="'.$_SERVER["PHP_SELF"].'?website='.$object->ref.'&pageid='.$websitepage->id.'&action=setshowsubcontainers&token='.newToken().'">'.img_picto($langs->trans("ShowSubContainersOnOff", $langs->transnoentitiesnoconv("Off")), 'switch_off', '', false, 0, 0, '', 'nomarginleft').'</a>';
+					print '<a class="nobordertransp nohoverborder marginleftonlyshort valignmiddle"'.$disabled.' href="'.$_SERVER["PHP_SELF"].'?website='.$object->ref.'&pageid='.$websitepage->id.'&action=setshowsubcontainers&token='.newToken().'">'.img_picto($langs->trans("ShowSubContainersOnOff", $langs->transnoentitiesnoconv("Off")), 'switch_off', '', 0, 0, 0, '', 'nomarginleft').'</a>';
 				} else {
-					print '<a class="nobordertransp nohoverborder marginleftonlyshort valignmiddle"'.$disabled.' href="'.$_SERVER["PHP_SELF"].'?website='.$object->ref.'&pageid='.$websitepage->id.'&action=unsetshowsubcontainers&token='.newToken().'">'.img_picto($langs->trans("ShowSubContainersOnOff", $langs->transnoentitiesnoconv("On")), 'switch_on', '', false, 0, 0, '', 'nomarginleft').'</a>';
+					print '<a class="nobordertransp nohoverborder marginleftonlyshort valignmiddle"'.$disabled.' href="'.$_SERVER["PHP_SELF"].'?website='.$object->ref.'&pageid='.$websitepage->id.'&action=unsetshowsubcontainers&token='.newToken().'">'.img_picto($langs->trans("ShowSubContainersOnOff", $langs->transnoentitiesnoconv("On")), 'switch_on', '', 0, 0, 0, '', 'nomarginleft').'</a>';
 				}
 				print '</div>';
 
@@ -3600,13 +3601,13 @@ if (!GETPOST('hide_websitemenu')) {
 				$disableeditinline = 0;
 				if ($disableeditinline) {
 					//print '<input type="submit" class="button bordertransp" disabled="disabled" title="'.dol_escape_htmltag($langs->trans("OnlyEditionOfSourceForGrabbedContent")).'" value="'.dol_escape_htmltag($langs->trans("EditWithEditor")).'" name="editcontent">';
-					print '<a class="nobordertransp opacitymedium nohoverborder marginleftonlyshort"'.$disabled.' href="#" disabled="disabled" title="'.dol_escape_htmltag($langs->trans("OnlyEditionOfSourceForGrabbedContent")).'">'.img_picto($langs->trans("OnlyEditionOfSourceForGrabbedContent"), 'switch_off', '', false, 0, 0, '', 'nomarginleft').'</a>';
+					print '<a class="nobordertransp opacitymedium nohoverborder marginleftonlyshort"'.$disabled.' href="#" disabled="disabled" title="'.dol_escape_htmltag($langs->trans("OnlyEditionOfSourceForGrabbedContent")).'">'.img_picto($langs->trans("OnlyEditionOfSourceForGrabbedContent"), 'switch_off', '', 0, 0, 0, '', 'nomarginleft').'</a>';
 				} else {
 					//print '<input type="submit" class="button nobordertransp"'.$disabled.' value="'.dol_escape_htmltag($langs->trans("EditWithEditor")).'" name="editcontent">';
 					if (!getDolGlobalString('WEBSITE_EDITINLINE')) {
-						print '<a class="nobordertransp nohoverborder marginleftonlyshort valignmiddle"'.$disabled.' href="'.$_SERVER["PHP_SELF"].'?website='.$object->ref.'&pageid='.$websitepage->id.'&action=seteditinline&token='.newToken().'">'.img_picto($langs->trans("EditInLineOnOff", $langs->transnoentitiesnoconv("Off")), 'switch_off', '', false, 0, 0, '', 'nomarginleft').'</a>';
+						print '<a class="nobordertransp nohoverborder marginleftonlyshort valignmiddle"'.$disabled.' href="'.$_SERVER["PHP_SELF"].'?website='.$object->ref.'&pageid='.$websitepage->id.'&action=seteditinline&token='.newToken().'">'.img_picto($langs->trans("EditInLineOnOff", $langs->transnoentitiesnoconv("Off")), 'switch_off', '', 0, 0, 0, '', 'nomarginleft').'</a>';
 					} else {
-						print '<a class="nobordertransp nohoverborder marginleftonlyshort valignmiddle"'.$disabled.' href="'.$_SERVER["PHP_SELF"].'?website='.$object->ref.'&pageid='.$websitepage->id.'&action=unseteditinline&token='.newToken().'">'.img_picto($langs->trans("EditInLineOnOff", $langs->transnoentitiesnoconv("On")), 'switch_on', '', false, 0, 0, '', 'nomarginleft').'</a>';
+						print '<a class="nobordertransp nohoverborder marginleftonlyshort valignmiddle"'.$disabled.' href="'.$_SERVER["PHP_SELF"].'?website='.$object->ref.'&pageid='.$websitepage->id.'&action=unseteditinline&token='.newToken().'">'.img_picto($langs->trans("EditInLineOnOff", $langs->transnoentitiesnoconv("On")), 'switch_on', '', 0, 0, 0, '', 'nomarginleft').'</a>';
 					}
 				}
 
@@ -3651,9 +3652,9 @@ if (!GETPOST('hide_websitemenu')) {
 			$realpage = $urlwithroot.'/public/website/index.php?website='.$websitekey.'&pageref='.$websitepage->pageurl;
 			$pagealias = $websitepage->pageurl;
 
-			$htmltext = $langs->trans("PreviewSiteServedByDolibarr", $langs->transnoentitiesnoconv("Page"), $langs->transnoentitiesnoconv("Page"), $realpage, $dataroot);
-			$htmltext .= '<br>'.$langs->trans("CheckVirtualHostPerms", $langs->transnoentitiesnoconv("ReadPerm"), '{s1}');
-			$htmltext = str_replace('{s1}', $dataroot.'<br>'.DOL_DATA_ROOT.'/medias<br>'.DOL_DOCUMENT_ROOT, $htmltext);
+			$htmltext = $langs->trans("PreviewSiteServedByDolibarr", $langs->transnoentitiesnoconv("Page"), $langs->transnoentitiesnoconv("Page"), $realpage, $langs->transnoentitiesnoconv("TestDeployOnWeb"));
+			//$htmltext .= '<br>'.$langs->trans("CheckVirtualHostPerms", $langs->transnoentitiesnoconv("ReadPerm"), '{s1}');
+			//$htmltext = str_replace('{s1}', $dataroot.'<br>'.DOL_DATA_ROOT.'/medias<br>'.DOL_DOCUMENT_ROOT, $htmltext);
 			//$htmltext .= '<br>'.$langs->trans("CheckVirtualHostPerms", $langs->transnoentitiesnoconv("WritePerm"), '{s1}');
 			//$htmltext = str_replace('{s1}', DOL_DATA_ROOT.'/medias', $htmltext);
 
@@ -3720,6 +3721,7 @@ if (!GETPOST('hide_websitemenu')) {
 			$htmltext .= $langs->transnoentitiesnoconv("YouCanEditHtmlSource1", $url);
 			$htmltext .= $langs->transnoentitiesnoconv("YouCanEditHtmlSource2", $url);
 			$htmltext .= $langs->transnoentitiesnoconv("YouCanEditHtmlSource3", $url);
+			$htmltext .= $langs->transnoentitiesnoconv("YouCanEditHtmlSource4", $url);
 			$htmltext .= $langs->transnoentitiesnoconv("YouCanEditHtmlSourceMore", $url);
 			$htmltext .= '<br>';
 			$htmltext .= '</small>';
@@ -3999,7 +4001,7 @@ if ($action == 'editcss') {
 	print '<tr><td class="tdtop">';
 	print $langs->trans('WEBSITE_HTML_HEADER');
 	$htmlhelp = $langs->trans("Example").' :<br>';
-	$htmlhelp .= dol_htmlentitiesbr($htmlheadercontentdefault);
+	$htmlhelp .= dol_nl2br(dol_htmlentities($htmlheadercontentdefault));	// do not use dol_htmlentitiesbr here, $htmlheadercontentdefault is HTML with content like <link> and <script> that we want to be html encode as they must be show as doc content not executable instruction.
 	$textwithhelp = $form->textwithpicto('', $htmlhelp, 1, 'help', '', 0, 2, 'htmlheadertooltip');
 	$htmlhelp2 = $langs->trans("LinkAndScriptsHereAreNotLoadedInEditor").'<br>';
 	print $form->textwithpicto($textwithhelp, $htmlhelp2, 1, 'warning', '', 0, 2, 'htmlheadertooltip2');
@@ -4362,7 +4364,7 @@ if ($action == 'editmeta' || $action == 'createcontainer') {	// Edit properties 
 		$pagelang = GETPOST('WEBSITE_LANG', 'aZ09');
 	}
 	if (GETPOST('WEBSITE_ALLOWED_IN_FRAMES', 'aZ09')) {
-		$pageallowedinframes = GETPOST('WEBSITE_ALLOWED_IN_FRAMES', 'aZ09');
+		$pageallowedinframes = GETPOST('WEBSITE_ALLOWED_IN_FRAMES', 'aZ09') ? 1 : 0;
 	}
 	if (GETPOST('htmlheader', 'none')) {		// Must accept tags like '<script>' and '<link>'
 		$pagehtmlheader = GETPOST('htmlheader', 'none');
@@ -4403,6 +4405,9 @@ if ($action == 'editmeta' || $action == 'createcontainer') {	// Edit properties 
 						jQuery(".spanprefix").hide();
 					}
 				});
+
+				// Force at init execution a first time of the handler change
+				jQuery("#selectWEBSITE_TYPE_CONTAINER").trigger(\'change\');
 			});
 			</script>
 		';
@@ -4652,6 +4657,7 @@ if ($action == 'editmeta' || $action == 'createcontainer') {	// Edit properties 
 	$htmltext .= $langs->transnoentitiesnoconv("YouCanEditHtmlSource1", $url);
 	$htmltext .= $langs->transnoentitiesnoconv("YouCanEditHtmlSource2", $url);
 	$htmltext .= $langs->transnoentitiesnoconv("YouCanEditHtmlSource3", $url);
+	$htmltext .= $langs->transnoentitiesnoconv("YouCanEditHtmlSource4", $url);
 	$htmltext .= $langs->transnoentitiesnoconv("YouCanEditHtmlSourceMore", $url);
 	$htmltext .= '<br>';
 	$htmltext .= '</small>';
@@ -4731,8 +4737,8 @@ if ($action == 'editmeta' || $action == 'createcontainer') {	// Edit properties 
 	print '<tr><td class="tdhtmlheader tdtop">';
 	$htmlhelp = $langs->trans("EditTheWebSiteForACommonHeader").'<br><br>';
 	$htmlhelp .= $langs->trans("Example").' :<br>';
-	$htmlhelp .= dol_htmlentitiesbr($htmlheadercontentdefault);
-	print $form->textwithpicto($langs->trans('HtmlHeaderPage'), $htmlhelp, 1, 'help', '', 0, 2, 'htmlheadertooltip');
+	$htmlhelp .= dol_nl2br(dol_htmlentities($htmlheadercontentdefault));	// do not use dol_htmlentitiesbr here, $htmlheadercontentdefault is HTML with content like <link> and <script> that we want to be html encode as they must be show as doc content not executable instruction.
+	print $form->textwithpicto($langs->transnoentitiesnoconv('HtmlHeaderPage'), $htmlhelp, 1, 'help', '', 0, 2, 'htmlheadertooltip');
 	print '</td><td>';
 	$poscursor = array('x' => GETPOST('htmlheader_x'), 'y' => GETPOST('htmlheader_y'));
 	$doleditor = new DolEditor('htmlheader', $pagehtmlheader, '', 120, 'ace', 'In', true, false, 'ace', ROWS_3, '100%', 0, $poscursor);

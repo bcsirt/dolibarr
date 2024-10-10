@@ -125,6 +125,7 @@ class Contact extends CommonObject
 		'fk_user_creat' => array('type' => 'integer', 'label' => 'UserAuthor', 'enabled' => 1, 'visible' => 3, 'position' => 310),
 		'fk_user_modif' => array('type' => 'integer', 'label' => 'UserModif', 'enabled' => 1, 'visible' => 3, 'position' => 315),
 		'statut' => array('type' => 'tinyint(4)', 'label' => 'Status', 'enabled' => 1, 'visible' => 1, 'notnull' => 1, 'position' => 500),
+		'ip' => array('type' => 'varchar(250)', 'label' => 'Ip', 'enabled' => '1', 'position' => 700, 'notnull' => 0, 'visible' => '0', 'comment' => 'ip used to create record (for public submission page)'),
 		'import_key' => array('type' => 'varchar(14)', 'label' => 'ImportId', 'enabled' => 1, 'visible' => -1, 'position' => 1000),
 	);
 
@@ -321,6 +322,10 @@ class Contact extends CommonObject
 	 */
 	public $user_login;
 
+	/**
+	 * @var string IP address
+	 */
+	public $ip;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -495,6 +500,7 @@ class Contact extends CommonObject
 		$sql .= ", entity";
 		$sql .= ", ref_ext";
 		$sql .= ", import_key";
+		$sql .= ", ip";
 		$sql .= ") VALUES (";
 		$sql .= "'".$this->db->idate($now)."',";
 		if ($this->socid > 0) {
@@ -512,7 +518,8 @@ class Contact extends CommonObject
 		$sql .= " ".(!empty($this->canvas) ? "'".$this->db->escape($this->canvas)."'" : "null").",";
 		$sql .= " ".((int) $this->entity).",";
 		$sql .= "'".$this->db->escape($this->ref_ext)."',";
-		$sql .= " ".(!empty($this->import_key) ? "'".$this->db->escape($this->import_key)."'" : "null");
+		$sql .= " ".(!empty($this->import_key) ? "'".$this->db->escape($this->import_key)."'" : "null").",";
+		$sql .= " ".(!empty($this->ip) ? "'".$this->db->escape($this->ip)."'" : "null");
 		$sql .= ")";
 
 		dol_syslog(get_class($this)."::create", LOG_DEBUG);
@@ -971,10 +978,11 @@ class Contact extends CommonObject
 	 *  @param      ?User	$user       	Load also alerts of this user (subscribing to alerts) that want alerts about this contact
 	 *  @param      string  $ref_ext    	External reference, not given by Dolibarr
 	 *  @param		string	$email			Email
-	 *  @param		int		$loadalsoroles	Load also roles. Try to always 0 here and load roles with a separate call of fetchRoles().
+	 *  @param		int		$loadalsoroles	Load also roles. Try to always use 0 here and load roles with a separate call of fetchRoles().
+	 *  @param		int		$socid			Filter on thirdparty id
 	 *  @return     int     		    	>0 if OK, <0 if KO or if two records found for same ref or idprof, 0 if not found.
 	 */
-	public function fetch($id, $user = null, $ref_ext = '', $email = '', $loadalsoroles = 0)
+	public function fetch($id, $user = null, $ref_ext = '', $email = '', $loadalsoroles = 0, $socid = 0)
 	{
 		global $langs;
 
@@ -1018,6 +1026,9 @@ class Contact extends CommonObject
 			}
 			if ($email) {
 				$sql .= " AND c.email = '".$this->db->escape($email)."'";
+			}
+			if ($socid) {
+				$sql .= " AND c.fk_soc = ".((int) $socid);
 			}
 		}
 
@@ -1156,6 +1167,37 @@ class Contact extends CommonObject
 			$this->error = $this->db->error();
 			return -1;
 		}
+	}
+
+	/**
+	 *    Search the contact that match the most the provided parameters.
+	 *    Searching rules try to find the existing contact.
+	 *
+	 *  @param      int		$id         	Id of contact
+	 *  @param      string  $lastname    	Lastname (TODO Not yet implemented)
+	 *  @param      string  $firstname   	Firstname (TODO Not yet implemented)
+	 *  @param      string  $ref_ext    	External reference, not given by Dolibarr
+	 *  @param		string	$email			Email
+	 *  @param		string	$ref_alias		Name alias (TODO Not yet implemented)
+	 *  @param		int		$socid			Filter on thirdparty id
+	 *  @return     int     		    	ID of contact if OK, <0 if KO or if two records found for same ref or idprof, 0 if not found.
+	 */
+	public function findNearest($id = 0, $lastname = '', $firstname = '', $ref_ext = '', $email = '', $ref_alias = '', $socid = 0)
+	{
+		// A rowid is known, it is a unique key so we found it
+		if ($id) {
+			return $id;
+		}
+
+		// We try to find the contact with exact matching on all fields
+		// TODO Replace this with step by step search
+		// Then search on email
+		// Then search on lastname + firstname
+		// Then search ref_ext or alias with a OR
+		$tmpcontact = new Contact($this->db);
+		$result = $tmpcontact->fetch($id, null, $ref_ext, $email, 0, $socid);
+
+		return $result;
 	}
 
 
@@ -1405,9 +1447,9 @@ class Contact extends CommonObject
 
 	/**
 	 * getTooltipContentArray
-	 * @param array $params params to construct tooltip data
+	 * @param array<string,mixed> $params params to construct tooltip data
 	 * @since v18
-	 * @return array
+	 * @return array{picto?:string,ref?:string,refsupplier?:string,label?:string,date?:string,date_echeance?:string,amountht?:string,total_ht?:string,totaltva?:string,amountlt1?:string,amountlt2?:string,amountrevenustamp?:string,totalttc?:string}|array{optimize:string}
 	 */
 	public function getTooltipContentArray($params)
 	{

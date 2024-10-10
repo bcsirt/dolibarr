@@ -178,7 +178,7 @@ $error = 0;
  * Actions
  */
 
-if ($action == 'confirm_refusepropal' && $confirm == 'yes') {
+if ($action == 'confirm_refusepropal' && $confirm == 'yes') {	// Test on pemrission not required here. Public form. Security checked on the securekey and on mitigation
 	$db->begin();
 
 	$sql  = "UPDATE ".MAIN_DB_PREFIX."propal";
@@ -803,19 +803,19 @@ if ($action == "dosign" && empty($cancel)) {
 		if ($object->status == $object::STATUS_SIGNED) {
 			print '<br>';
 			if ($message == 'signed') {
-				print img_picto('', 'check', '', false, 0, 0, '', 'size2x').'<br>';
+				print img_picto('', 'check', '', 0, 0, 0, '', 'size2x').'<br>';
 				print '<span class="ok">'.$langs->trans("PropalSigned").'</span>';
 			} else {
-				print img_picto('', 'check', '', false, 0, 0, '', 'size2x').'<br>';
+				print img_picto('', 'check', '', 0, 0, 0, '', 'size2x').'<br>';
 				print '<span class="ok">'.$langs->trans("PropalAlreadySigned").'</span>';
 			}
 		} elseif ($object->status == $object::STATUS_NOTSIGNED) {
 			print '<br>';
 			if ($message == 'refused') {
-				print img_picto('', 'cross', '', false, 0, 0, '', 'size2x').'<br>';
+				print img_picto('', 'cross', '', 0, 0, 0, '', 'size2x').'<br>';
 				print '<span class="ok">'.$langs->trans("PropalRefused").'</span>';
 			} else {
-				print img_picto('', 'cross', '', false, 0, 0, '', 'size2x').'<br>';
+				print img_picto('', 'cross', '', 0, 0, 0, '', 'size2x').'<br>';
 				print '<span class="warning">'.$langs->trans("PropalAlreadyRefused").'</span>';
 			}
 		} else {
@@ -835,7 +835,7 @@ if ($action == "dosign" && empty($cancel)) {
 			print '<input type="submit" class="butAction small wraponsmartphone marginbottomonly marginleftonly marginrightonly reposition" value="'.$langs->trans("SignFichinter").'">';
 		}
 	} elseif ($source == 'expedition') {
-		if ($message == 'signed' || $object->signed_status == Expedition::STATUS_SIGNED) {
+		if ($message == 'signed' || $object->signed_status == Expedition::$SIGNED_STATUSES['STATUS_SIGNED_SENDER']) {
 			print '<span class="ok">'.$langs->trans("ExpeditionSigned").'</span>';
 		} else {
 			print '<input type="submit" class="butAction small wraponsmartphone marginbottomonly marginleftonly marginrightonly reposition" value="'.$langs->trans("SignExpedition").'">';

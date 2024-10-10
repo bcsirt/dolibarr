@@ -5,6 +5,7 @@
  * Copyright (C) 2015      Marcos García        <marcosgdf@gmail.com>
  * Copyright (C) 2016      Abbes Bahfir         <contact@dolibarrpar.com>
  * Copyright (C) 2024       Frédéric France             <frederic.france@free.fr>
+ * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -270,7 +271,7 @@ if ($result > 0) {
 	}
 
 	$newcardbutton = '';
-	$newcardbutton .= dolGetButtonTitle($langs->trans('New'), '', 'fa fa-plus-circle', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=create&backtopage='.urlencode($_SERVER['PHP_SELF']), '', $permissiontoadd);
+	$newcardbutton .= dolGetButtonTitle($langs->trans('New'), '', 'fa fa-plus-circle', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=create&backtopage='.urlencode($_SERVER['PHP_SELF']), '', (int) $permissiontoadd);
 
 	$titlelist = $langs->trans("ListOfActiveNotifications");
 
@@ -311,7 +312,7 @@ if ($result > 0) {
 			}
 			print '</td>';
 			print '<td>';
-			print img_picto('', 'object_action', '', false, 0, 0, '', 'paddingright').$form->selectarray("actionid", $actions, '', 1);
+			print img_picto('', 'object_action', '', 0, 0, 0, '', 'paddingright').$form->selectarray("actionid", $actions, '', 1);
 			print '</td>';
 			print '<td>';
 			$type = array('email' => $langs->trans("EMail"));
@@ -356,7 +357,7 @@ if ($result > 0) {
 				print '</td>';
 				print '<td>';
 				$label = ($langs->trans("Notify_".$obj->code) != "Notify_".$obj->code ? $langs->trans("Notify_".$obj->code) : $obj->label);
-				print img_picto('', 'object_action', '', false, 0, 0, '', 'paddingright').$label;
+				print img_picto('', 'object_action', '', 0, 0, 0, '', 'paddingright').$label;
 				print '</td>';
 				print '<td>';
 				if ($obj->type == 'email') {

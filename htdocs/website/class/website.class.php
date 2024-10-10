@@ -47,6 +47,9 @@ class Website extends CommonObject
 	 */
 	public $table_element = 'website';
 
+	/**
+	 * @var string[]	List of child tables. To know object to delete on cascade.
+	 */
 	protected $childtablesoncascade = array();
 
 	/**
@@ -218,9 +221,9 @@ class Website extends CommonObject
 		$sql .= ' '.(!isset($this->fk_default_home) ? 'NULL' : $this->fk_default_home).',';
 		$sql .= ' '.(!isset($this->virtualhost) ? 'NULL' : "'".$this->db->escape($this->virtualhost)."'").",";
 		$sql .= ' '.(!isset($this->fk_user_creat) ? $user->id : $this->fk_user_creat).',';
-		$sql .= ' '.(!isset($this->date_creation) || dol_strlen($this->date_creation) == 0 ? 'NULL' : "'".$this->db->idate($this->date_creation)."'").",";
+		$sql .= ' '.(!isset($this->date_creation) || dol_strlen((string) $this->date_creation) == 0 ? 'NULL' : "'".$this->db->idate($this->date_creation)."'").",";
 		$sql .= ' '.((int) $this->position).",";
-		$sql .= ' '.(!isset($this->date_modification) || dol_strlen($this->date_modification) == 0 ? 'NULL' : "'".$this->db->idate($this->date_modification)."'");
+		$sql .= ' '.(!isset($this->date_modification) || dol_strlen((string) $this->date_modification) == 0 ? 'NULL' : "'".$this->db->idate($this->date_modification)."'");
 		$sql .= ')';
 
 		$this->db->begin();
@@ -1318,7 +1321,7 @@ class Website extends CommonObject
 		}
 
 		// Load sql record
-		$runsql = run_sql($sqlfile, 1, '', 0, '', 'none', 0, 1, 0, 0, 1); // The maxrowid of table is searched into this function two
+		$runsql = run_sql($sqlfile, 1, 0, 0, '', 'none', 0, 1, 0, 0, 1); // The maxrowid of table is searched into this function two
 		if ($runsql <= 0) {
 			$this->errors[] = 'Failed to load sql file '.$sqlfile.' (ret='.((int) $runsql).')';
 			$error++;
@@ -1522,6 +1525,7 @@ class Website extends CommonObject
 	public function componentSelectLang($languagecodes, $weblangs, $morecss = '', $htmlname = '')
 	{
 		global $websitepagefile, $website;
+		'@phan-var-force WebSite $website';
 
 		if (!is_object($weblangs)) {
 			return 'ERROR componentSelectLang called with parameter $weblangs not defined';

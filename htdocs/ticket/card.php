@@ -249,7 +249,7 @@ if (empty($reshook)) {
 			$object->fk_soc = GETPOSTINT('socid');
 			$fk_user_assign = GETPOSTINT('fk_user_assign');
 			$object->fk_project = GETPOSTINT('projectid');
-			$object->fk_contract = GETPOSTINT('fk_contract');
+			$object->fk_contract = GETPOSTISSET('contractid') ? GETPOSTINT('contractid') : GETPOSTINT('contratid');
 
 			if ($fk_user_assign > 0) {
 				$object->fk_user_assign = $fk_user_assign;
@@ -314,7 +314,7 @@ if (empty($reshook)) {
 					}
 
 					// Auto assign user
-					if (getDolGlobalString('TICKET_AUTO_ASSIGN_USER_CREATE')) {
+					if ((empty($fk_user_assign) && getDolGlobalInt('TICKET_AUTO_ASSIGN_USER_CREATE') == 1) || (getDolGlobalInt('TICKET_AUTO_ASSIGN_USER_CREATE') == 2)) {
 						$result = $object->assignUser($user, $user->id, 1);
 						$object->add_contact($user->id, "SUPPORTTEC", 'internal');
 					}
@@ -344,7 +344,9 @@ if (empty($reshook)) {
 				$db->rollback();
 				setEventMessages($object->error, $object->errors, 'errors');
 			}
-		} else $action = $ifErrorAction;
+		} else {
+			$action = $ifErrorAction;
+		}
 	}
 
 	// Mark as Read
@@ -1152,6 +1154,7 @@ if ($action == 'create' || $action == 'presend') {
 					if ($objecttype == "fichinter") {
 						foreach ($objects as $fichinter) {
 							$foundinter++;
+							/** @var Fichinter $fichinter */
 							$timing += $fichinter->duration;
 						}
 					}
@@ -1160,7 +1163,7 @@ if ($action == 'create' || $action == 'presend') {
 			print '<tr><td>';
 			print $form->textwithpicto($langs->trans("TicketDurationAuto"), $langs->trans("TicketDurationAutoInfos"), 1);
 			print '</td><td>';
-			print $foundinter ? convertSecondToTime($timing, 'all', getDolGlobalString('MAIN_DURATION_OF_WORKDAY')) : '';
+			print $foundinter ? convertSecondToTime($timing, 'all', getDolGlobalInt('MAIN_DURATION_OF_WORKDAY')) : '';
 			print '</td></tr>';
 		}
 
@@ -1172,9 +1175,6 @@ if ($action == 'create' || $action == 'presend') {
 
 		// End of left column and beginning of right column
 		print '</div><div class="fichehalfright">';
-
-
-
 
 
 		print '<form method="post" name="formticketproperties" action="'.$url_page_current.'">';
@@ -1332,7 +1332,7 @@ if ($action == 'create' || $action == 'presend') {
 			foreach (array('internal', 'external') as $source) {
 				$tmpobject = $object;
 				$tab = $tmpobject->listeContact(-1, $source);
-				'@phan-var-force array<array{source:string,id:int,rowid:int,email:string,civility:string,firstname:string,lastname:string,labeltype:string,libelle:string,socid:int,code:string,status:int,statuscontact:string,fk_c_typecontact:string,phone:string,phone_mobile:string,nom:string}> $tab';
+				'@phan-var-force array<array{source:string,id:int,rowid:int,email:string,civility:string,firstname:string,lastname:string,labeltype:string,libelle:string,socid:int,code:string,status:int,statuscontact:string,fk_c_typecontact:string,phone:string,phone_mobile:string,phone_perso?:string,nom:string}> $tab';
 				$num = is_array($tab) ? 0 : count($tab);
 				$i = 0;
 				foreach (array_keys($tab) as $i) {
@@ -1585,12 +1585,12 @@ if ($action == 'create' || $action == 'presend') {
 			// Show link to add a message (if read and not closed)
 			$btnstatus = $object->status < Ticket::STATUS_CLOSED && $action != "presend" && $action != "presend_addmessage" && $action != "add_message";
 			$url = 'card.php?track_id='.$object->track_id.'&action=presend_addmessage&mode=init';
-			$morehtmlright .= dolGetButtonTitle($langs->trans('TicketAddMessage'), '', 'fa fa-comment-dots', $url, 'add-new-ticket-title-button', $btnstatus);
+			$morehtmlright .= dolGetButtonTitle($langs->trans('TicketAddMessage'), '', 'fa fa-comment-dots', $url, 'add-new-ticket-title-button', (int) $btnstatus);
 
 			// Show link to add event (if read and not closed)
 			$btnstatus = $object->status < Ticket::STATUS_CLOSED && $action != "presend" && $action != "presend_addmessage" && $action != "add_message";
 			$url = dol_buildpath('/comm/action/card.php', 1).'?action=create&datep='.date('YmdHi').'&origin=ticket&originid='.$object->id.'&projectid='.$object->fk_project.'&backtopage='.urlencode($_SERVER["PHP_SELF"].'?track_id='.$object->track_id);
-			$morehtmlright .= dolGetButtonTitle($langs->trans('AddAction'), '', 'fa fa-plus-circle', $url, 'add-new-ticket-even-button', $btnstatus);
+			$morehtmlright .= dolGetButtonTitle($langs->trans('AddAction'), '', 'fa fa-plus-circle', $url, 'add-new-ticket-even-button', (int) $btnstatus);
 
 			print_barre_liste($langs->trans("ActionsOnTicket"), 0, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, '', 0, -1, '', 0, $morehtmlright, '', 0, 1, 1);
 

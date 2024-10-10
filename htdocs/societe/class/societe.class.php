@@ -1,26 +1,26 @@
 <?php
-/* Copyright (C) 2002-2006  Rodolphe Quiedeville    <rodolphe@quiedeville.org>
- * Copyright (C) 2004-2021  Laurent Destailleur     <eldy@users.sourceforge.net>
- * Copyright (C) 2004       Eric Seigne             <eric.seigne@ryxeo.com>
- * Copyright (C) 2003       Brian Fraval            <brian@fraval.org>
- * Copyright (C) 2006       Andre Cianfarani        <acianfa@free.fr>
- * Copyright (C) 2005-2017  Regis Houssin           <regis.houssin@inodbox.com>
- * Copyright (C) 2008       Patrick Raguin          <patrick.raguin@auguria.net>
- * Copyright (C) 2010-2018  Juanjo Menent           <jmenent@2byte.es>
- * Copyright (C) 2013       Florian Henry           <florian.henry@open-concept.pro>
- * Copyright (C) 2013-2023  Alexandre Spangaro      <aspangaro@open-dsi.fr>
- * Copyright (C) 2013       Peter Fontaine          <contact@peterfontaine.fr>
- * Copyright (C) 2014-2015  Marcos García           <marcosgdf@gmail.com>
- * Copyright (C) 2015       Raphaël Doursenaud      <rdoursenaud@gpcsolutions.fr>
- * Copyright (C) 2017       Rui Strecht			    <rui.strecht@aliartalentos.com>
- * Copyright (C) 2018	    Philippe Grand	        <philippe.grand@atoo-net.com>
- * Copyright (C) 2019-2020  Josep Lluís Amador      <joseplluis@lliuretic.cat>
- * Copyright (C) 2019-2024  Frédéric France         <frederic.france@free.fr>
- * Copyright (C) 2020       Open-Dsi         		<support@open-dsi.fr>
- * Copyright (C) 2022		ButterflyOfFire         <butterflyoffire+dolibarr@protonmail.com>
- * Copyright (C) 2023       Alexandre Janniaux      <alexandre.janniaux@gmail.com>
- * Copyright (C) 2024		William Mead			<william.mead@manchenumerique.fr>
- * Copyright (C) 2024		MDW						<mdeweerd@users.noreply.github.com>
+/* Copyright (C) 2002-2006	Rodolphe Quiedeville		<rodolphe@quiedeville.org>
+ * Copyright (C) 2004-2021	Laurent Destailleur			<eldy@users.sourceforge.net>
+ * Copyright (C) 2004		Eric Seigne					<eric.seigne@ryxeo.com>
+ * Copyright (C) 2003		Brian Fraval				<brian@fraval.org>
+ * Copyright (C) 2006		Andre Cianfarani			<acianfa@free.fr>
+ * Copyright (C) 2005-2017	Regis Houssin				<regis.houssin@inodbox.com>
+ * Copyright (C) 2008		Patrick Raguin				<patrick.raguin@auguria.net>
+ * Copyright (C) 2010-2018	Juanjo Menent				<jmenent@2byte.es>
+ * Copyright (C) 2013		Florian Henry				<florian.henry@open-concept.pro>
+ * Copyright (C) 2013-2024	Alexandre Spangaro			<alexandre@inovea-conseil.com>
+ * Copyright (C) 2013		Peter Fontaine				<contact@peterfontaine.fr>
+ * Copyright (C) 2014-2015	Marcos García				<marcosgdf@gmail.com>
+ * Copyright (C) 2015		Raphaël Doursenaud			<rdoursenaud@gpcsolutions.fr>
+ * Copyright (C) 2017		Rui Strecht					<rui.strecht@aliartalentos.com>
+ * Copyright (C) 2018		Philippe Grand				<philippe.grand@atoo-net.com>
+ * Copyright (C) 2019-2020	Josep Lluís Amador			<joseplluis@lliuretic.cat>
+ * Copyright (C) 2019-2024	Frédéric France				<frederic.france@free.fr>
+ * Copyright (C) 2020		Open-Dsi					<support@open-dsi.fr>
+ * Copyright (C) 2022		ButterflyOfFire				<butterflyoffire+dolibarr@protonmail.com>
+ * Copyright (C) 2023		Alexandre Janniaux			<alexandre.janniaux@gmail.com>
+ * Copyright (C) 2024		William Mead				<william.mead@manchenumerique.fr>
+ * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -246,7 +246,7 @@ class Societe extends CommonObject
 		'localtax2_value' => array('type' => 'double(6,3)', 'label' => 'Localtax2 value', 'enabled' => 1, 'visible' => -1, 'position' => 355),
 		'vat_reverse_charge' => array('type' => 'tinyint(4)', 'label' => 'Vat reverse charge', 'enabled' => 1, 'visible' => -1, 'position' => 335),
 		'barcode' => array('type' => 'varchar(255)', 'label' => 'Barcode', 'enabled' => 1, 'visible' => -1, 'position' => 360),
-		'price_level' => array('type' => 'integer', 'label' => 'Price level', 'enabled' => '$conf->global->PRODUIT_MULTIPRICES || getDolGlobalString("PRODUIT_CUSTOMER_PRICES_BY_QTY_MULTIPRICES")', 'visible' => -1, 'position' => 365),
+		'price_level' => array('type' => 'integer', 'label' => 'Price level', 'enabled' => '$conf->global->PRODUIT_MULTIPRICES || getDolGlobalString("PRODUIT_CUSTOMER_PRICES_BY_QTY_MULTIPRICES") || getDolGlobalString("PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES")', 'visible' => -1, 'position' => 365),
 		'default_lang' => array('type' => 'varchar(6)', 'label' => 'Default lang', 'enabled' => 1, 'visible' => -1, 'position' => 370),
 		'canvas' => array('type' => 'varchar(32)', 'label' => 'Canvas', 'enabled' => 1, 'visible' => -1, 'position' => 375),
 		'fk_barcode_type' => array('type' => 'integer', 'label' => 'Fk barcode type', 'enabled' => 1, 'visible' => -1, 'position' => 405),
@@ -672,7 +672,13 @@ class Societe extends CommonObject
 	public $code_compta;
 
 	/**
-	 * Accounting code for customer
+	 * Accounting general account for customer
+	 * @var string
+	 */
+	public $accountancy_code_customer_general;
+
+	/**
+	 * Accounting auxiliary account for customer
 	 * @var string
 	 */
 	public $accountancy_code_customer;
@@ -784,6 +790,11 @@ class Societe extends CommonObject
 	public $ref_ext;
 
 	/**
+	 * @var string IP address
+	 */
+	public $ip;
+
+	/**
 	 * Import key.
 	 * Set when the thirdparty has been created through an import process. This is to relate those created thirdparties
 	 * to an import process
@@ -862,6 +873,9 @@ class Societe extends CommonObject
 
 	// Fields loaded by fetchPartnerships()
 
+	/**
+	 * @var array<array<mixed>>
+	 */
 	public $partnerships = array();
 
 
@@ -966,6 +980,7 @@ class Societe extends CommonObject
 
 		$this->code_compta_client = trim(empty($this->code_compta_client) ? $this->code_compta : $this->code_compta_client);
 
+		$this->accountancy_code_customer_general = trim($this->accountancy_code_customer_general);
 		$this->accountancy_code_customer = trim((string) $this->code_compta_client);
 		$this->accountancy_code_supplier = trim((string) $this->code_compta_fournisseur);
 		$this->accountancy_code_buy = trim((string) $this->accountancy_code_buy);
@@ -1020,6 +1035,7 @@ class Societe extends CommonObject
 			$sql .= ", import_key";
 			$sql .= ", fk_multicurrency";
 			$sql .= ", multicurrency_code";
+			$sql .= ", ip";
 			if (!getDolGlobalString('MAIN_COMPANY_PERENTITY_SHARED')) {
 				$sql .= ", vat_reverse_charge";
 				$sql .= ", accountancy_code_buy";
@@ -1040,6 +1056,7 @@ class Societe extends CommonObject
 			$sql .= ", ".(!empty($this->import_key) ? "'".$this->db->escape($this->import_key)."'" : "null");
 			$sql .= ", ".(int) $this->fk_multicurrency;
 			$sql .= ", '".$this->db->escape($this->multicurrency_code)."'";
+			$sql .= ", '".$this->db->escape($this->ip)."'";
 			if (!getDolGlobalString('MAIN_COMPANY_PERENTITY_SHARED')) {
 				$sql .= ", ".(empty($this->vat_reverse_charge) ? '0' : '1');
 				$sql .= ", '" . $this->db->escape($this->accountancy_code_buy) . "'";
@@ -1063,6 +1080,7 @@ class Societe extends CommonObject
 					$sql .= " fk_soc";
 					$sql .= ", entity";
 					$sql .= ", vat_reverse_charge";
+					$sql .= ", accountancy_code_customer_general";
 					$sql .= ", accountancy_code_customer";
 					$sql .= ", accountancy_code_supplier";
 					$sql .= ", accountancy_code_buy";
@@ -1071,6 +1089,7 @@ class Societe extends CommonObject
 					$sql .= $this->id;
 					$sql .= ", ".((int) $conf->entity);
 					$sql .= ", ".(empty($this->vat_reverse_charge) ? '0' : '1');
+					$sql .= ", '".$this->db->escape($this->accountancy_code_customer_general)."'";
 					$sql .= ", '".$this->db->escape($this->accountancy_code_customer)."'";
 					$sql .= ", '".$this->db->escape($this->accountancy_code_supplier)."'";
 					$sql .= ", '".$this->db->escape($this->accountancy_code_buy)."'";
@@ -1656,6 +1675,7 @@ class Societe extends CommonObject
 				$sql .= ", accountancy_code_buy = '" . $this->db->escape($this->accountancy_code_buy) . "'";
 				$sql .= ", accountancy_code_sell= '" . $this->db->escape($this->accountancy_code_sell) . "'";
 				if ($customer) {
+					$sql .= ", accountancy_code_customer_general = ".(!empty($this->accountancy_code_customer_general) ? "'".$this->db->escape($this->accountancy_code_customer_general)."'" : "null");
 					$sql .= ", code_compta = ".(!empty($this->code_compta_client) ? "'".$this->db->escape($this->code_compta_client)."'" : "null");
 				}
 
@@ -1751,6 +1771,7 @@ class Societe extends CommonObject
 					$sql .= " fk_soc";
 					$sql .= ", entity";
 					$sql .= ", vat_reverse_charge";
+					$sql .= ", accountancy_code_customer_general";
 					$sql .= ", accountancy_code_customer";
 					$sql .= ", accountancy_code_supplier";
 					$sql .= ", accountancy_code_buy";
@@ -1759,6 +1780,7 @@ class Societe extends CommonObject
 					$sql .= $this->id;
 					$sql .= ", ".$conf->entity;
 					$sql .= ", ".(empty($this->vat_reverse_charge) ? '0' : '1');
+					$sql .= ", '".$this->db->escape($this->accountancy_code_customer_general)."'";
 					$sql .= ", '".$this->db->escape($this->code_compta_client)."'";
 					$sql .= ", '".$this->db->escape($this->code_compta_fournisseur)."'";
 					$sql .= ", '".$this->db->escape($this->accountancy_code_buy)."'";
@@ -1864,10 +1886,14 @@ class Societe extends CommonObject
 		$sql .= ', s.fk_forme_juridique as forme_juridique_code';
 		$sql .= ', s.webservices_url, s.webservices_key, s.model_pdf, s.last_main_doc';
 		if (!getDolGlobalString('MAIN_COMPANY_PERENTITY_SHARED')) {
-			$sql .= ', s.code_compta, s.code_compta_fournisseur, s.accountancy_code_buy, s.accountancy_code_sell';
+			$sql .= ', s.accountancy_code_customer_general, s.code_compta';
+			$sql .= ', s.code_compta_fournisseur';
+			$sql .= ', s.accountancy_code_buy, s.accountancy_code_sell';
 			$sql .= ', s.vat_reverse_charge as soc_vat_reverse_charge';
 		} else {
-			$sql .= ', spe.accountancy_code_customer as code_compta, spe.accountancy_code_supplier as code_compta_fournisseur, spe.accountancy_code_buy, spe.accountancy_code_sell';
+			$sql .= ', spe.accountancy_code_customer_general, spe.accountancy_code_customer as code_compta';
+			$sql .= ', spe.accountancy_code_supplier as code_compta_fournisseur';
+			$sql .= ', spe.accountancy_code_buy, spe.accountancy_code_sell';
 			$sql .= ', spe.vat_reverse_charge as spe_vat_reverse_charge';
 		}
 		$sql .= ', s.code_client, s.code_fournisseur, s.parent, s.barcode';
@@ -2024,6 +2050,7 @@ class Societe extends CommonObject
 				$this->code_client = $obj->code_client;
 				$this->code_fournisseur = $obj->code_fournisseur;
 
+				$this->accountancy_code_customer_general = $obj->accountancy_code_customer_general;
 				$this->code_compta = $obj->code_compta;			// For backward compatibility
 				$this->code_compta_client = $obj->code_compta;
 				$this->code_compta_fournisseur = $obj->code_compta_fournisseur;
@@ -2134,7 +2161,7 @@ class Societe extends CommonObject
 		}
 
 		// Use first price level if level not defined for third party
-		if ((getDolGlobalString('PRODUIT_MULTIPRICES') || getDolGlobalString('PRODUIT_CUSTOMER_PRICES_BY_QTY_MULTIPRICES')) && empty($this->price_level)) {
+		if ((getDolGlobalString('PRODUIT_MULTIPRICES') || getDolGlobalString('PRODUIT_CUSTOMER_PRICES_BY_QTY_MULTIPRICES') || getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) && empty($this->price_level)) {
 			$this->price_level = 1;
 		}
 
@@ -2159,7 +2186,7 @@ class Societe extends CommonObject
 	 *    @param    string	$ref_alias 		Name_alias of third party (Warning, this can return several records)
 	 * 	  @param	int		$is_client		Only client third party
 	 *    @param	int		$is_supplier	Only supplier third party
-	 *    @return   int						>0 if OK, <0 if KO or if two records found, 0 if not found.
+	 *    @return   int						ID of thirdparty found if OK, <0 if KO or if two records found, 0 if not found.
 	 */
 	public function findNearest($rowid = 0, $ref = '', $ref_ext = '', $barcode = '', $idprof1 = '', $idprof2 = '', $idprof3 = '', $idprof4 = '', $idprof5 = '', $idprof6 = '', $email = '', $ref_alias = '', $is_client = 0, $is_supplier = 0)
 	{
@@ -2172,7 +2199,7 @@ class Societe extends CommonObject
 		// TODO Replace this with step by step search
 		// Then search on barcode if we have it (+ restriction on is_client and is_supplier)
 		// Then search on profids with a OR (+ restriction on is_client and is_supplier)
-		// Then search on email with a OR (+ restriction on is_client and is_supplier)
+		// Then search on email (+ restriction on is_client and is_supplier)
 		// Then search ref, ref_ext or alias with a OR (+ restriction on is_client and is_supplier)
 		$tmpthirdparty = new Societe($this->db);
 		$result = $tmpthirdparty->fetch($rowid, $ref, $ref_ext, $barcode, $idprof1, $idprof2, $idprof3, $idprof4, $idprof5, $idprof6, $email, $ref_alias, $is_client, $is_supplier);
@@ -2184,11 +2211,11 @@ class Societe extends CommonObject
 	 *    Delete a third party from database and all its dependencies (contacts, rib...)
 	 *
 	 *    @param	int			$id             Id of third party to delete
-	 *    @param    User|null   $fuser          User who ask to delete thirdparty
-	 *    @param    int			$call_trigger   0=No, 1=yes
+	 *    @param    ?User		$fuser          User who ask to delete thirdparty
+	 *    @param    int<0,1>	$call_trigger   0=No, 1=yes
 	 *    @return	int							Return integer <0 if KO, 0 if nothing done, >0 if OK
 	 */
-	public function delete($id, User $fuser = null, $call_trigger = 1)
+	public function delete($id, $fuser = null, $call_trigger = 1)
 	{
 		global $conf, $user;
 
@@ -2416,7 +2443,7 @@ class Societe extends CommonObject
 			// Writes trace in discount history
 			$sql = "INSERT INTO ".MAIN_DB_PREFIX."societe_remise";
 			$sql .= " (entity, datec, fk_soc, remise_client, note, fk_user_author)";
-			$sql .= " VALUES (".$conf->entity.", '".$this->db->idate($now)."', ".((int) $this->id).", '".$this->db->escape($remise)."',";
+			$sql .= " VALUES (".((int) $conf->entity).", '".$this->db->idate($now)."', ".((int) $this->id).", '".$this->db->escape($remise)."',";
 			$sql .= " '".$this->db->escape($note)."',";
 			$sql .= " ".((int) $user->id);
 			$sql .= ")";
@@ -2477,7 +2504,7 @@ class Societe extends CommonObject
 			// Writes trace in discount history
 			$sql = "INSERT INTO ".MAIN_DB_PREFIX."societe_remise_supplier";
 			$sql .= " (entity, datec, fk_soc, remise_supplier, note, fk_user_author)";
-			$sql .= " VALUES (".$conf->entity.", '".$this->db->idate($now)."', ".((int) $this->id).", '".$this->db->escape($remise)."',";
+			$sql .= " VALUES (".((int) $conf->entity).", '".$this->db->idate($now)."', ".((int) $this->id).", '".$this->db->escape($remise)."',";
 			$sql .= " '".$this->db->escape($note)."',";
 			$sql .= " ".((int) $user->id);
 			$sql .= ")";
@@ -5553,7 +5580,7 @@ class Societe extends CommonObject
 					'Account' => '/compta/bank/class/account.class.php',
 					'ConferenceOrBoothAttendee' => '/eventorganization/class/conferenceorboothattendee.class.php',
 					'Societe' => '/societe/class/societe.class.php',
-					//'SocieteAccount', 'SocietePrice', 'SocieteRib',... are processed into the replaceThirparty of Societe.
+					//'SocieteAccount', 'SocietePrice', 'SocieteRib',... are processed into the replaceThirdparty of Societe.
 				);
 				if ($this->db->DDLListTables($conf->db->name, $this->db->prefix().'delivery')) {
 					$objects['Delivery'] = '/delivery/class/delivery.class.php';

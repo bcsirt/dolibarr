@@ -38,12 +38,17 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT.'/contrat/class/contratligne.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/price.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/margin/lib/margins.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/commonsignedobject.class.php';
 
 /**
  *	Class to manage contracts
+ * @property	int				$signed_status
+ * @static		array<int>		$SIGNED_STATUSES
  */
 class Contrat extends CommonObject
 {
+	use CommonSignedObject;
+
 	/**
 	 * @var string ID to identify managed object
 	 */
@@ -85,6 +90,10 @@ class Contrat extends CommonObject
 	 * @var string
 	 */
 	public $ref_customer;
+
+	/**
+	 * @var string Partial SQL query: 'FROM ' expression
+	 */
 	public $from;
 
 	/**
@@ -129,6 +138,9 @@ class Contrat extends CommonObject
 	 */
 	public $status = 0;
 
+	/**
+	 * @var Product
+	 */
 	public $product;
 
 	/**
@@ -161,14 +173,20 @@ class Contrat extends CommonObject
 	public $date_contrat;
 
 	/**
-	 * Status of the contract (0=NoSignature, 1=SignedBySender, 2=SignedByReceiver, 9=SignedByAll)
 	 * @var int
 	 */
-	public $signed_status = 0;
-
 	public $commercial_signature_id;
+	/**
+	 * @var int|string
+	 */
 	public $fk_commercial_signature;
+	/**
+	 * @var int
+	 */
 	public $commercial_suivi_id;
+	/**
+	 * @var int|string
+	 */
 	public $fk_commercial_suivi;
 
 	/**
@@ -178,6 +196,9 @@ class Contrat extends CommonObject
 	 */
 	public $fk_projet;
 
+	/**
+	 * @var array<string,string>  (Encoded as JSON in database)
+	 */
 	public $extraparams = array();
 
 	/**
@@ -185,10 +206,25 @@ class Contrat extends CommonObject
 	 */
 	public $lines = array();
 
+	/**
+	 * @var int
+	 */
 	public $nbofservices;
+	/**
+	 * @var int
+	 */
 	public $nbofserviceswait;
+	/**
+	 * @var int
+	 */
 	public $nbofservicesopened;
+	/**
+	 * @var int
+	 */
 	public $nbofservicesexpired;
+	/**
+	 * @var int
+	 */
 	public $nbofservicesclosed;
 	//public $lower_planned_end_date;
 	//public $higher_planner_end_date;
@@ -258,17 +294,6 @@ class Contrat extends CommonObject
 	const STATUS_DRAFT = 0;
 	const STATUS_VALIDATED = 1;
 	const STATUS_CLOSED = 2;
-
-	/**
-	 * Signed statuses dictionary. Label used as key for string localizations.
-	 */
-	const SIGNED_STATUSES = [
-		'STATUS_NO_SIGNATURE' => 0,
-		'STATUS_SIGNED_SENDER' => 1,
-		'STATUS_SIGNED_RECEIVER' => 2,
-		'STATUS_SIGNED_RECEIVER_ONLINE' => 3,
-		'STATUS_SIGNED_ALL' => 9 // To handle future kind of signature (ex: tripartite contract)
-	];
 
 	/**
 	 *	Constructor
@@ -673,16 +698,18 @@ class Contrat extends CommonObject
 	/**
 	 *  Load a contract from database
 	 *
-	 *  @param	int		$id     		Id of contract to load
-	 *  @param	string	$ref			Ref
-	 *  @param	string	$ref_customer	Customer ref
-	 *  @param	string	$ref_supplier	Supplier ref
-	 *  @param	int		$noextrafields	0=Default to load extrafields, 1=No extrafields
-	 *  @param	int		$nolines		0=Default to load lines, 1=No lines
+	 *  @param	int			$id     		Id of contract to load
+	 *  @param	string		$ref			Ref
+	 *  @param	string		$ref_customer	Customer ref
+	 *  @param	string		$ref_supplier	Supplier ref
+	 *  @param	int<0,1>	$noextrafields	0=Default to load extrafields, 1=No extrafields
+	 *  @param	int<0,1>	$nolines		0=Default to load lines, 1=No lines
 	 *  @return int     				Return integer <0 if KO, 0 if not found or if two records found for same ref, Id of contract if OK
 	 */
 	public function fetch($id, $ref = '', $ref_customer = '', $ref_supplier = '', $noextrafields = 0, $nolines = 0)
 	{
+		$result = -10;
+
 		$sql = "SELECT rowid, statut as status, ref, fk_soc as thirdpartyid,";
 		$sql .= " ref_supplier, ref_customer,";
 		$sql .= " ref_ext,";
@@ -797,10 +824,10 @@ class Contrat extends CommonObject
 	 *  Load lines array into this->lines.
 	 *  This set also nbofserviceswait, nbofservicesopened, nbofservicesexpired and nbofservicesclosed
 	 *
-	 *	@param		int				$only_services			0=Default for all, 1=Force only services (depending on setup, we may also have physical products in a contract)
-	 *	@param		int				$loadalsotranslation	0=Default to not load translations, 1=Load also translations of product descriptions
-	 *  @param		int				$noextrafields			0=Default to load extrafields, 1=Do not load the extrafields of lines
-	 *  @return 	array|int  								Return array of contract lines
+	 *	@param		int<0,1>		$only_services			0=Default for all, 1=Force only services (depending on setup, we may also have physical products in a contract)
+	 *	@param		int<0,1>		$loadalsotranslation	0=Default to not load translations, 1=Load also translations of product descriptions
+	 *  @param		int<0,1>		$noextrafields			0=Default to load extrafields, 1=Do not load the extrafields of lines
+	 *  @return 	array<int,ContratLigne>|int<min,-1>		Return array of contract lines
 	 */
 	public function fetch_lines($only_services = 0, $loadalsotranslation = 0, $noextrafields = 0)
 	{
@@ -1132,7 +1159,7 @@ class Contrat extends CommonObject
 							$this->add_contact($objcontact->fk_socpeople, $objcontact->code, $objcontact->source); // May failed because of duplicate key or because code of contact type does not exists for new object
 						}
 					} else {
-						dol_print_error($this->db, $resqlcontact);
+						dol_print_error($this->db);
 					}
 				}
 			}
@@ -1440,7 +1467,7 @@ class Contrat extends CommonObject
 	 * 	@param  int			$info_bits			Bits of type of lines
 	 * 	@param  int			$fk_fournprice		Fourn price id
 	 *  @param  int			$pa_ht				Buying price HT
-	 *  @param	array		$array_options		extrafields array
+	 *  @param	array<string,mixed>		$array_options		extrafields array
 	 * 	@param 	string		$fk_unit 			Code of the unit to use. Null to use the default one
 	 * 	@param 	int			$rang 				Position
 	 *  @return int             				Return integer <0 if KO, >0 if OK
@@ -1542,7 +1569,7 @@ class Contrat extends CommonObject
 			// Anciens indicateurs: $price, $remise (a ne plus utiliser)
 			$remise = 0;
 			$price = price2num(round($pu_ht, 2));
-			if (dol_strlen($remise_percent) > 0) {
+			if (dol_strlen(price2num($remise_percent)) > 0) {
 				$remise = round(($pu_ht * $remise_percent / 100), 2);
 				$price = $pu_ht - $remise;
 			}
@@ -1675,7 +1702,7 @@ class Contrat extends CommonObject
 	 * 	@param  int			$info_bits			Bits of type of lines
 	 * 	@param  int			$fk_fournprice		Fourn price id
 	 *  @param  int			$pa_ht				Buying price HT
-	 *  @param	array		$array_options		extrafields array
+	 *  @param	array<string,mixed>		$array_options		extrafields array
 	 * 	@param 	string		$fk_unit 			Code of the unit to use. Null to use the default one
 	 * 	@param 	int			$rang 				Position
 	 *  @return int              				Return integer <0 if KO, >0 if OK
@@ -1704,7 +1731,7 @@ class Contrat extends CommonObject
 
 		$subprice = $price;
 		$remise = 0;
-		if (dol_strlen($remise_percent) > 0) {
+		if (dol_strlen(price2num($remise_percent)) > 0) {
 			$remise = round(($pu * $remise_percent / 100), 2);
 			$price = $pu - $remise;
 		} else {
@@ -1743,7 +1770,7 @@ class Contrat extends CommonObject
 		// Anciens indicateurs: $price, $remise (a ne plus utiliser)
 		$remise = 0;
 		$price = price2num(round($pu, 2));
-		if (dol_strlen($remise_percent) > 0) {
+		if (dol_strlen(price2num($remise_percent)) > 0) {
 			$remise = round(($pu * $remise_percent / 100), 2);
 			$price = $pu - $remise;
 		}
@@ -1994,7 +2021,9 @@ class Contrat extends CommonObject
 			$text .= ($mode == 7 ? '</span><span class="nowraponall">' : '');
 			$text .= ($mode != 7 || $this->nbofservicesclosed > 0) ? ($this->nbofservicesclosed.ContratLigne::LibStatut(5, 3, -1, 'class="marginleft2"')) : '';
 			$text .= ($mode == 7 ? '</span>' : '');
-			$text .= $this->signed_status != '' ? ' '.$this->getLibSignedStatus(5) : '';
+			if (getDolGlobalString('CONTRACT_SHOW_SIGNATURE_STATUS_WITH_SERVICE_STATUS')) {
+				$text .= is_null($this->signed_status) ? '' : ' '.$this->getLibSignedStatus(5);
+			}
 			return $text;
 		} else {
 			return dolGetStatus($this->labelStatus[$status], $this->labelStatusShort[$status], '', $statusType, $mode);
@@ -2003,9 +2032,9 @@ class Contrat extends CommonObject
 
 	/**
 	 * getTooltipContentArray
-	 * @param array $params params to construct tooltip data
+	 * @param array<string,mixed> $params params to construct tooltip data
 	 * @since v18
-	 * @return array
+	 * @return array{picto?:string,ref?:string,refsupplier?:string,label?:string,date?:string,date_echeance?:string,amountht?:string,total_ht?:string,totaltva?:string,amountlt1?:string,amountlt2?:string,amountrevenustamp?:string,totalttc?:string}|array{optimize:string}
 	 */
 	public function getTooltipContentArray($params)
 	{
@@ -2172,8 +2201,8 @@ class Contrat extends CommonObject
 	/**
 	 *  Return list of line rowid
 	 *
-	 *  @param	int		$status     Status of lines to get
-	 *  @return array|int       	Array of line's rowid or <0 if error
+	 *  @param	int		$status			Status of lines to get
+	 *  @return int[]|int<min,-1>		Array of line's rowid or <0 if error
 	 */
 	public function array_detail($status = -1)
 	{
@@ -2207,11 +2236,11 @@ class Contrat extends CommonObject
 	/**
 	 *  Return list of other contracts for the same company than current contract
 	 *
-	 *	@param	string		$option					'all' or 'others'
-	 *	@param	array		$status					sort contracts having these status
-	 *	@param  array		$product_categories		sort contracts containing these product categories
-	 *	@param	array		$line_status			sort contracts where lines have these status
-	 *  @return array|int   						Array of contracts id or <0 if error
+	 *	@param	'all'|'others'	$option				'all' or 'others'
+	 *	@param	int[]		$status					sort contracts having these status
+	 *	@param  string[]	$product_categories		sort contracts containing these product categories
+	 *	@param	int[]		$line_status			sort contracts where lines have these status
+	 *  @return array<int,Contrat>|int<min,-1>					Array of contracts id or <0 if error
 	 */
 	public function getListOfContracts($option = 'all', $status = [], $product_categories = [], $line_status = [])
 	{
@@ -2391,7 +2420,7 @@ class Contrat extends CommonObject
 	/**
 	 *  Return id des contacts clients de facturation
 	 *
-	 *  @return     array       Liste des id contacts facturation
+	 *  @return     int[]       Liste des id contacts facturation
 	 */
 	public function getIdBillingContact()
 	{
@@ -2401,7 +2430,7 @@ class Contrat extends CommonObject
 	/**
 	 *  Return id des contacts clients de prestation
 	 *
-	 *  @return     array       Liste des id contacts prestation
+	 *  @return     int[]       Liste des id contacts prestation
 	 */
 	public function getIdServiceContact()
 	{
@@ -2496,14 +2525,14 @@ class Contrat extends CommonObject
 	/**
 	 * 	Create an array of associated tickets
 	 *
-	 * 	@return array|int		Array o tickets or <0 if KO
+	 * 	@return Ticket[]|int<min,-1>		Array o tickets or <0 if KO
 	 */
 	public function getTicketsArray()
 	{
 		global $user;
 
 		$ticket = new Ticket($this->db);
-		$nbTicket =  $ticket->fetchAll($user, 'ASC', 't.datec', '', 0, '', array('t.fk_contract' => $this->id));
+		$nbTicket =  $ticket->fetchAll($user, 'ASC', 't.datec', 0, 0, 0, array('t.fk_contract' => $this->id));
 
 		return ($nbTicket < 0 ? $nbTicket : $ticket->lines);
 	}
@@ -2517,7 +2546,7 @@ class Contrat extends CommonObject
 	 *  @param      int			$hidedetails    Hide details of lines
 	 *  @param      int			$hidedesc       Hide description
 	 *  @param      int			$hideref        Hide ref
-	 *  @param   	null|array  $moreparams     Array to provide more information
+	 *  @param   	?array<string,mixed>  $moreparams     Array to provide more information
 	 * 	@return     int         				Return integer < 0 if KO, 0 = no doc generated, > 0 if OK
 	 */
 	public function generateDocument($modele, $outputlangs, $hidedetails = 0, $hidedesc = 0, $hideref = 0, $moreparams = null)
@@ -2632,7 +2661,7 @@ class Contrat extends CommonObject
 		require_once DOL_DOCUMENT_ROOT."/core/modules/contract/" . getDolGlobalString('CONTRACT_ADDON').'.php';
 		$obj = getDolGlobalString('CONTRACT_ADDON');
 		$modContract = new $obj();
-		'@phan-var-force ModelNumRefContracts $modContrat';
+		'@phan-var-force ModelNumRefContracts $modContract';
 		$clonedObj->ref = $modContract->getNextValue($objsoc, $clonedObj);
 
 		// get extrafields so they will be clone
@@ -2913,6 +2942,7 @@ class Contrat extends CommonObject
 		}
 		if (!empty($arraydata['thirdparty'])) {
 			$tmpthirdparty = $arraydata['thirdparty'];
+			'@phan-var-force Societe $tmpthirdparty';
 			$return .= '<br><div class="info-box-label inline-block valignmiddle">'.$tmpthirdparty->getNomUrl(1).'</div>';
 		}
 		if (property_exists($this, 'date_contrat')) {
@@ -2926,82 +2956,5 @@ class Contrat extends CommonObject
 		$return .= '</div>';
 
 		return $return;
-	}
-
-	/**
-	 * Set signed status
-	 *
-	 * @param  User   $user        Object user that modify
-	 * @param  int    $status      Newsigned  status to set (often a constant like self::STATUS_XXX)
-	 * @param  int    $notrigger   1 = Does not execute triggers, 0 = Execute triggers
-	 * @param  string $triggercode Trigger code to use
-	 * @return int                 0 < if KO, > 0 if OK
-	 */
-	public function setSignedStatus(User $user, int $status = 0, int $notrigger = 0, $triggercode = ''): int
-	{
-		global $langs;
-		$langs->loadLangs(array('contracts', 'commercial'));
-		$this->signed_status = $status;
-		$this->context['signature'] = $status;
-		switch ($status) {
-			case 0:
-				$this->context['actionmsg2'] = $langs->transnoentitiesnoconv('ContractUnsignedInDolibarr');
-				break;
-			case 1:
-				$this->context['actionmsg2'] = $langs->transnoentitiesnoconv('SignedSender');
-				break;
-			case 2:
-				$this->context['actionmsg2'] = $langs->transnoentitiesnoconv('SignedReceiver');
-				break;
-			case 3:
-				$this->context['actionmsg2'] = $langs->transnoentitiesnoconv('SignedReceiverOnline');
-				break;
-			case 9:
-				$this->context['actionmsg2'] = $langs->transnoentitiesnoconv('SignedAll');
-				break;
-		}
-		return $this->setSignedStatusCommon($user, $status, $notrigger, $triggercode);
-	}
-
-	/**
-	 *	Returns the label for signed status
-	 *
-	 *	@param		int		$mode	0=long label, 1=short label, 2=Picto + short label, 3=Picto, 4=Picto + long label, 5=Short label + Picto
-	 *	@return		string			Label
-	 */
-	public function getLibSignedStatus(int $mode = 0): string
-	{
-		global $langs;
-		$langs->load("commercial");
-		$list_signed_status = $this->getSignedStatusLocalisedArray();
-		$signed_status_label = $this->signed_status != '' ? $list_signed_status[$this->signed_status] : '';
-		$signed_status_label_short = $this->signed_status != '' ? $list_signed_status[$this->signed_status] : '';
-		$signed_status_code = 'status'.$this->signed_status;
-		return dolGetStatus($signed_status_label, $signed_status_label_short, '', $signed_status_code, $mode);
-	}
-
-	/**
-	 *	Returns an array of signed statuses with associated localized labels
-	 *
-	 *	@return array
-	 */
-	public function getSignedStatusLocalisedArray(): array
-	{
-		global $langs;
-		$langs->load("commercial");
-
-		$l10n_signed_status_labels = [
-			self::SIGNED_STATUSES['STATUS_NO_SIGNATURE']			=> 'NoSignature',
-			self::SIGNED_STATUSES['STATUS_SIGNED_SENDER']			=> 'SignedSender',
-			self::SIGNED_STATUSES['STATUS_SIGNED_RECEIVER']			=> 'SignedReceiver',
-			self::SIGNED_STATUSES['STATUS_SIGNED_RECEIVER_ONLINE']	=> 'SignedReceiverOnline',
-			self::SIGNED_STATUSES['STATUS_SIGNED_ALL']				=> 'SignedAll'
-		];
-
-		$l10n_signed_status = [];
-		foreach (self::SIGNED_STATUSES as $signed_status_code) {
-			$l10n_signed_status[$signed_status_code] = $langs->transnoentitiesnoconv($l10n_signed_status_labels[$signed_status_code]);
-		}
-		return $l10n_signed_status;
 	}
 }

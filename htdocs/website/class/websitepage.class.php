@@ -62,42 +62,74 @@ class WebsitePage extends CommonObject
 	 */
 	protected $childtablesoncascade = array('categorie_website_page');
 
-
 	/**
-	 * @var int ID
+	 * @var int Website ID
 	 */
 	public $fk_website;
 
+	/**
+	 * @var ?int Page ID
+	 */
 	public $fk_page;		// If translation of another page
 
+	/**
+	 * @var string Page url
+	 */
 	public $pageurl;
+
+	/**
+	 * @var string Alias alt
+	 */
 	public $aliasalt;
+
+	/**
+	 * @var string Container type
+	 */
 	public $type_container;
 
 	/**
 	 * @var string title
 	 */
 	public $title;
+
 	/**
 	 * @var string description
 	 */
 	public $description;
+
 	/**
 	 * @var string image
 	 */
 	public $image;
+
 	/**
 	 * @var string keywords
 	 */
 	public $keywords;
+
 	/**
 	 * @var string language code ('en', 'fr', 'en-gb', ..)
 	 */
 	public $lang;
 
+	/**
+	 * @var int allowed in frames
+	 */
 	public $allowed_in_frames;
+
+	/**
+	 * @var string html header
+	 */
 	public $htmlheader;
+
+	/**
+	 * @var string content
+	 */
 	public $content;
+
+	/**
+	 * @var string grabbed from
+	 */
 	public $grabbed_from;
 
 	/**
@@ -105,7 +137,14 @@ class WebsitePage extends CommonObject
 	 */
 	public $status;
 
+	/**
+	 * @var int ID
+	 */
 	public $fk_user_creat;
+
+	/**
+	 * @var int ID
+	 */
 	public $fk_user_modif;
 
 	/**
@@ -230,15 +269,17 @@ class WebsitePage extends CommonObject
 	/**
 	 * Load object in memory from the database
 	 *
-	 * @param int       $id             Id object.
-	 *                                  - If this is 0, the value into $page will be used. If not found or $page not defined, the default page of website_id will be used or the first page found if not set.
-	 *                                  - If value is < 0, we must exclude this ID.
-	 * @param string    $website_id     Web site id (page name must also be filled if this parameter is used)
-	 * @param string    $page           Page name (website id must also be filled if this parameter is used). Example 'myaliaspage' or 'fr/myaliaspage'
-	 * @param string    $aliasalt       Alternative alias to search page (slow)
-	 * @return int<-1,1>				Return integer <0 if KO, 0 if not found, >0 if OK
+	 * @param 	int       	$id             		Id object.
+	 *                                  			- If this is 0, the value into $page will be used. If not found or $page not defined, the default page of website_id will be used or the first page found if not set.
+	 *                                  			- If value is < 0, we must exclude this ID.
+	 * @param 	string    	$website_id     		Web site id (page name must also be filled if this parameter is used)
+	 * @param 	string    	$page           		Page name (website id must also be filled if this parameter is used). Example 'myaliaspage' or 'fr/myaliaspage'
+	 * @param 	string    	$aliasalt       		Alternative alias to search page (slow)
+	 * @param	int			$translationparentid	Translation parent ID (a main language page ID to get the translated page). Parameter $translationparentlang must also be set.
+	 * @param	string		$translationparentlang	Translation parent Lang (a language lang to search the translation of the main page ID). Parameter $translationparentid must also be set.
+	 * @return 	int<-1,1>							Return integer <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $website_id = null, $page = null, $aliasalt = null)
+	public function fetch($id, $website_id = null, $page = null, $aliasalt = null, $translationparentid = 0, $translationparentlang = '')
 	{
 		dol_syslog(__METHOD__, LOG_DEBUG);
 
@@ -255,7 +296,7 @@ class WebsitePage extends CommonObject
 		$sql .= " t.htmlheader,";
 		$sql .= " t.content,";
 		$sql .= " t.lang,";
-		$sql .= " t.fk_page,";
+		$sql .= " t.fk_page,";				// Translation parent page (in mani language)
 		$sql .= " t.allowed_in_frames,";
 		$sql .= " t.status,";
 		$sql .= " t.grabbed_from,";
@@ -274,7 +315,7 @@ class WebsitePage extends CommonObject
 			$sql .= ' AND t.rowid = '.((int) $id);
 		} else {
 			if ($id < 0) {
-				$sql .= ' AND t.rowid <> '.abs($id);
+				$sql .= ' AND t.rowid <> '.((int) abs($id));
 			}
 			if (null !== $website_id) {
 				$sql .= " AND t.fk_website = '".$this->db->escape($website_id)."'";
@@ -294,7 +335,11 @@ class WebsitePage extends CommonObject
 					}
 				}
 				if ($aliasalt) {
-					$sql .= " AND (t.aliasalt LIKE '%,".$this->db->escape($aliasalt).",%' OR t.aliasalt LIKE '%, ".$this->db->escape($aliasalt).",%')";
+					$sql .= " AND (t.aliasalt LIKE '%,".$this->db->escape($this->db->escapeforlike($aliasalt)).",%' OR t.aliasalt LIKE '%, ".$this->db->escape($this->db->escapeforlike($aliasalt)).",%')";
+				}
+				if ($translationparentid && $translationparentlang) {
+					$sql .= " AND t.fk_page = ".((int) $translationparentid);
+					$sql .= " AND t.lang = '".$this->db->escape($translationparentlang)."'";
 				}
 			}
 		}
@@ -504,12 +549,13 @@ class WebsitePage extends CommonObject
 	/**
 	 * Count objects in the database.
 	 *
-	 * @param  string      $websiteid    Web site
-	 * @param  array       $filter       Filter array
-	 * @param  string      $filtermode   Filter mode (AND or OR)
-	 * @return int         		         int <0 if KO, array of pages if OK
+	 * @param  string      	$websiteid    	Web site
+	 * @param  string|array	$filter       	Filter as an Universal Search string.
+	 * 										Example: '((client:=:1) OR ((client:>=:2) AND (client:<=:3))) AND (client:!=:8) AND (nom:like:'a%')'
+	 * @param  string      	$filtermode   	Filter mode (AND or OR)
+	 * @return int         		         	int <0 if KO, array of pages if OK
 	 */
-	public function countAll($websiteid, array $filter = array(), $filtermode = 'AND')
+	public function countAll($websiteid, $filter = '', $filtermode = 'AND')
 	{
 		dol_syslog(__METHOD__, LOG_DEBUG);
 
@@ -519,36 +565,53 @@ class WebsitePage extends CommonObject
 		$sql .= ' FROM '.MAIN_DB_PREFIX.$this->table_element.' as t';
 		$sql .= ' WHERE t.fk_website = '.((int) $websiteid);
 
-		// Manage filter (same than into fetchAll)
-		$sqlwhere = array();
-		if (count($filter) > 0) {
-			foreach ($filter as $key => $value) {
-				if ($key == 't.rowid' || $key == 't.fk_website' || $key == 'status') {
-					$sqlwhere[] = $key." = ".((int) $value);
-				} elseif ($key == 'type_container') {
-					$sqlwhere[] = $key." = '".$this->db->escape($value)."'";
-				} elseif ($key == 'lang' || $key == 't.lang') {
-					$listoflang = array();
-					$foundnull = 0;
-					foreach (explode(',', $value) as $tmpvalue) {
-						if ($tmpvalue == 'null') {
-							$foundnull++;
-							continue;
+		// Deprecated. If we receive an array, we use it. Prefer using the USF syntax.
+		if (is_array($filter)) {
+			$sqlwhere = array();
+
+			if (count($filter) > 0) {
+				foreach ($filter as $key => $value) {
+					if ($key == 't.rowid' || $key == 'rowid' || $key == 't.fk_website' || $key == 'fk_website' || $key == 'status' || $key == 't.status') {
+						$sqlwhere[] = $key." = ".((int) $value);
+					} elseif ($key == 'type_container' || $key == 't.type_container') {
+						$sqlwhere[] = $key." = '".$this->db->escape($value)."'";
+					} elseif ($key == 'lang' || $key == 't.lang') {
+						$listoflang = array();
+						$foundnull = 0;
+						foreach (explode(',', $value) as $tmpvalue) {
+							if ($tmpvalue == 'null') {
+								$foundnull++;
+								continue;
+							}
+							$listoflang[] = "'".$this->db->escape(substr(str_replace("'", '', $tmpvalue), 0, 2))."'";
 						}
-						$listoflang[] = "'".$this->db->escape(substr(str_replace("'", '', $tmpvalue), 0, 2))."'";
+						$stringtouse = $this->db->sanitize($key)." IN (".$this->db->sanitize(implode(',', $listoflang), 1).")";
+						if ($foundnull) {
+							$stringtouse = "(".$stringtouse." OR ".$this->db->sanitize($key)." IS NULL)";
+						}
+						$sqlwhere[] = $stringtouse;
+					} else {
+						$sqlwhere[] = $this->db->sanitize($key)." LIKE '%".$this->db->escape($value)."%'";
 					}
-					$stringtouse = $key." IN (".$this->db->sanitize(implode(',', $listoflang), 1).")";
-					if ($foundnull) {
-						$stringtouse = "(".$stringtouse." OR ".$key." IS NULL)";
-					}
-					$sqlwhere[] = $stringtouse;
-				} else {
-					$sqlwhere[] = $key." LIKE '%".$this->db->escape($value)."%'";
 				}
 			}
+			if (count($sqlwhere) > 0) {
+				if (!empty($websiteid)) {
+					$sql .= " AND (".implode(' '.$this->db->escape($filtermode).' ', $sqlwhere).')';
+				} else {
+					$sql .= " WHERE ".implode(' '.$this->db->escape($filtermode).' ', $sqlwhere);
+				}
+			}
+
+			$filter = '';
 		}
-		if (count($sqlwhere) > 0) {
-			$sql .= ' AND ('.implode(' '.$this->db->escape($filtermode).' ', $sqlwhere).')';
+
+		$errormessage = '';
+		$sql .= forgeSQLFromUniversalSearchCriteria($filter, $errormessage);
+		if ($errormessage) {
+			$this->errors[] = $errormessage;
+			dol_syslog(__METHOD__.' '.implode(',', $this->errors), LOG_ERR);
+			return -1;
 		}
 
 		$resql = $this->db->query($sql);
